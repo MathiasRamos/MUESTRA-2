@@ -1,0 +1,169 @@
+name: Autograding Tests
+'on':
+- push
+- workflow_dispatch
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Existe Unir
+      id: existe-unir
+      uses: education/autograding-command-grader@v1
+      with:
+        test-name: Existe Unir
+        setup-command: ''
+        command: "ls unir.sh"
+        timeout: 1
+    - name: Ejemplo Unir 1
+      id: ejemplo-unir-1
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Ejemplo Unir 1
+        setup-command: echo "Archivo 1" > archivo1 ; echo "Archivo 2" > archivo2
+        command: bash unir.sh archivo1 archivo2
+        input: ''
+        expected-output: "Archivo 1\nArchivo 2"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Ejemplo Unir 2
+      id: ejemplo-unir-2
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Ejemplo Unir 2
+        setup-command: echo "Archivo 1" > archivo1 ; echo "Archivo 2" > archivo2 ; echo "Archivo 3" > archivo3
+        command: bash unir.sh -o output.txt archivo1 archivo2 archivo3 >/dev/null && cat output.txt
+        input: ''
+        expected-output: "Archivo 1\nArchivo 2\nArchivo 3"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Unir un archivo
+      id: unir-un-archivo
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Unir un archivo
+        setup-command: echo "Archivo 1" > archivo1
+        command: bash unir.sh archivo1
+        input: ''
+        expected-output: "Archivo 1"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Unir cinco archivos
+      id: unir-cinco-archivos
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Unir cinco archivos
+        setup-command: for i in $(seq 5); do echo "Archivo $i" > archivo$i ; done
+        command: bash unir.sh archivo*
+        input: ''
+        expected-output: "Archivo 1\nArchivo 2\nArchivo 3\nArchivo 4\nArchivo 5"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Unir salida archivo existente
+      id: unir-salida-archivo-existente
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Unir salida archivo existente
+        setup-command: echo "Archivo 1" > archivo1 ; echo "Archivo 2" > archivo2 ; echo "Archivo 3" > archivo3
+        command: bash unir.sh -o archivo1 archivo2 archivo3 >/dev/null && cat archivo1
+        input: ''
+        expected-output: "Archivo 2\nArchivo 3"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Unir sin salto
+      id: unir-sin-salto
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Unir sin salto
+        setup-command: echo -n "Archivo 1" > archivo1 ; echo -n "Archivo 2" > archivo2
+        command: bash unir.sh archivo1 archivo2
+        input: ''
+        expected-output: "Archivo 1Archivo 2"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Existe Parser
+      id: existe-parser
+      uses: education/autograding-command-grader@v1
+      with:
+        test-name: Existe Parser
+        setup-command: ''
+        command: "ls parser.sh"
+        timeout: 1
+    - name: Ejemplo Parser
+      id: ejemplo-parser
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Ejemplo Parser
+        setup-command: echo "juan,18,informatica" > muestra.csv ; echo "jose,20,electronica" >> muestra.csv ; echo "maria,18,mecanica" >> muestra.csv
+        command: bash parser.sh muestra.csv , 3
+        input: ''
+        expected-output: "nfrmtc\nlctrnc\nmcnc"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Parser sin columna
+      id: parser-sin-columna
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Parser sin columna
+        setup-command: echo "juan,18,informatica" > muestra.csv ; echo "jose,20,electronica" >> muestra.csv ; echo "maria,18,mecanica" >> muestra.csv
+        command: bash parser.sh muestra.csv ,
+        input: ''
+        expected-output: "jn\njs\nmr"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Parser separador punto
+      id: parser-separador-punto
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Parser separador punto
+        setup-command: echo "juan.18.informatica" > muestra.csv ; echo "jose.20.electronica" >> muestra.csv ; echo "maria.18.mecanica" >> muestra.csv
+        command: bash parser.sh muestra.csv . 3
+        input: ''
+        expected-output: "nfrmtc\nlctrnc\nmcnc"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Parser otro nombre archivo
+      id: parser-otro-nombre-archivo
+      uses: education/autograding-io-grader@v1
+      with:
+        test-name: Parser otro nombre archivo
+        setup-command: echo "juan,18,informatica" > otro.txt ; echo "jose,20,electronica" >> otro.txt ; echo "maria,18,mecanica" >> otro.txt
+        command: bash parser.sh otro.txt , 3
+        input: ''
+        expected-output: "nfrmtc\nlctrnc\nmcnc"
+        comparison-method: exact
+        timeout: 1
+        max-score: 1
+    - name: Autograding Reporter
+      uses: education/autograding-grading-reporter@v1
+      env:
+        EXISTE-UNIR_RESULTS: "${{steps.existe-unir.outputs.result}}"
+        EJEMPLO-UNIR-1_RESULTS: "${{steps.ejemplo-unir-1.outputs.result}}"
+        EJEMPLO-UNIR-2_RESULTS: "${{steps.ejemplo-unir-2.outputs.result}}"
+        UNIR-UN-ARCHIVO_RESULTS: "${{steps.unir-un-archivo.outputs.result}}"
+        UNIR-CINCO-ARCHIVOS_RESULTS: "${{steps.unir-cinco-archivos.outputs.result}}"
+        UNIR-SALIDA-ARCHIVO-EXISTENTE_RESULTS: "${{steps.unir-salida-archivo-existente.outputs.result}}"
+        UNIR-SIN-SALTO_RESULTS: "${{steps.unir-sin-salto.outputs.result}}"
+        EXISTE-PARSER_RESULTS: "${{steps.existe-parser.outputs.result}}"
+        EJEMPLO-PARSER_RESULTS: "${{steps.ejemplo-parser.outputs.result}}"
+        PARSER-SIN-COLUMNA_RESULTS: "${{steps.parser-sin-columna.outputs.result}}"
+        PARSER-SEPARADOR-PUNTO_RESULTS: "${{steps.parser-separador-punto.outputs.result}}"
+        PARSER-OTRO-NOMBRE-ARCHIVO_RESULTS: "${{steps.parser-otro-nombre-archivo.outputs.result}}"
+      with:
+        runners: existe-unir,ejemplo-unir-1,ejemplo-unir-2,unir-un-archivo,unir-cinco-archivos,unir-salida-archivo-existente,unir-sin-salto,existe-parser,ejemplo-parser,parser-sin-columna,parser-separador-punto,parser-otro-nombre-archivo
